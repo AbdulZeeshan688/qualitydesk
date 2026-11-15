@@ -1,0 +1,321 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>QualityDesk – Mini QMS Tracker</title>
+<meta name="description" content="A small quality management system tracker: non-conformances and CAPA, internal audits, document control and carbon footprint data.">
+<style>
+:root{--bg:#f4f6f8;--card:#fff;--ink:#16202b;--mute:#5d6b7a;--line:#dde3ea;--brand:#0f4c5c;--brand2:#e36414;--ok:#1b7f4b;--warn:#b26a00;--bad:#b3261e;--blue:#1f5fa8}
+*{box-sizing:border-box}
+body{margin:0;font:15px/1.45 system-ui,-apple-system,"Segoe UI",Roboto,Arial,sans-serif;background:var(--bg);color:var(--ink)}
+header{background:var(--brand);color:#fff;padding:14px 20px;display:flex;gap:12px;align-items:center;flex-wrap:wrap}
+header h1{font-size:19px;margin:0}
+header p{margin:0;font-size:13px;opacity:.85;flex:1;min-width:200px}
+nav{display:flex;gap:4px;padding:0 16px;background:#fff;border-bottom:1px solid var(--line);overflow-x:auto}
+nav button{border:0;background:none;padding:12px 14px;font:inherit;color:var(--mute);cursor:pointer;border-bottom:3px solid transparent;white-space:nowrap}
+nav button.on{color:var(--brand);border-color:var(--brand2);font-weight:600}
+main{max-width:1150px;margin:0 auto;padding:18px 16px 60px}
+h2{font-size:18px;margin:0 0 4px}
+.sub{color:var(--mute);margin:0 0 14px;font-size:14px}
+.bar{display:flex;gap:8px;align-items:center;flex-wrap:wrap;margin-bottom:12px}
+.bar .sp{flex:1}
+.btn{border:1px solid var(--brand);background:var(--brand);color:#fff;padding:7px 12px;border-radius:6px;font:inherit;font-size:14px;cursor:pointer}
+.btn.ghost{background:#fff;color:var(--brand)}
+.btn.sm{padding:3px 8px;font-size:13px}
+header .btn{border-color:#fff;background:transparent}
+.card{background:var(--card);border:1px solid var(--line);border-radius:10px;padding:14px;margin-bottom:14px}
+.kpis{display:grid;grid-template-columns:repeat(auto-fit,minmax(170px,1fr));gap:12px;margin-bottom:14px}
+.kpi{background:#fff;border:1px solid var(--line);border-left:5px solid var(--brand);border-radius:10px;padding:12px}
+.kpi b{display:block;font-size:26px}
+.kpi span{color:var(--mute);font-size:13px}
+.kpi.bad{border-left-color:var(--bad)}.kpi.warn{border-left-color:var(--warn)}.kpi.ok{border-left-color:var(--ok)}
+.cols{display:grid;grid-template-columns:1fr 1fr;gap:14px}
+@media(max-width:800px){.cols{grid-template-columns:1fr}}
+.tw{overflow-x:auto}
+table{width:100%;border-collapse:collapse;font-size:14px}
+th,td{text-align:left;padding:8px;border-bottom:1px solid var(--line);vertical-align:top}
+th{font-size:12px;text-transform:uppercase;letter-spacing:.04em;color:var(--mute);white-space:nowrap}
+tr.click{cursor:pointer}tr.click:hover{background:#f0f5f7}
+.tag{display:inline-block;padding:2px 8px;border-radius:99px;font-size:12px;font-weight:600;background:#e8edf2;color:#33414f;white-space:nowrap}
+.tag.ok{background:#dcf3e6;color:var(--ok)}.tag.warn{background:#fdeccb;color:var(--warn)}.tag.bad{background:#fbdcd9;color:var(--bad)}.tag.blue{background:#dbe8f8;color:var(--blue)}
+ul.plain{list-style:none;margin:0;padding:0}
+ul.plain li{padding:7px 0;border-bottom:1px solid var(--line);font-size:14px}
+ul.plain li:last-child{border:0}
+small,.mute{color:var(--mute)}
+dialog{border:0;border-radius:12px;padding:0;width:min(680px,94vw);box-shadow:0 20px 60px rgba(0,0,0,.3)}
+dialog::backdrop{background:rgba(10,20,30,.45)}
+dialog form{padding:18px}
+dialog h3{margin:0 0 12px}
+label{display:block;font-size:13px;font-weight:600;margin:10px 0 3px}
+input,select,textarea{width:100%;padding:7px 8px;border:1px solid #b9c3ce;border-radius:6px;font:inherit;background:#fff}
+textarea{min-height:56px;resize:vertical}
+.grid2{display:grid;grid-template-columns:1fr 1fr;gap:0 12px}
+.acts{display:flex;gap:8px;justify-content:flex-end;margin-top:16px;flex-wrap:wrap}
+.meter{height:14px;background:#e8edf2;border-radius:99px;overflow:hidden}
+.meter i{display:block;height:100%;background:var(--brand)}
+.note{background:#fff7e6;border:1px solid #f1d49a;border-radius:8px;padding:8px 10px;font-size:13px;margin-bottom:12px}
+#toast{position:fixed;left:50%;bottom:22px;transform:translateX(-50%);background:#16202b;color:#fff;padding:9px 16px;border-radius:8px;font-size:14px;opacity:0;transition:opacity .25s;pointer-events:none}
+#toast.show{opacity:1}
+footer{text-align:center;color:var(--mute);font-size:12px;padding:0 16px 24px}
+@media print{header .btn,nav,.bar,footer,#toast{display:none!important}body{background:#fff}.card,.kpi{break-inside:avoid}}
+</style>
+</head>
+<body>
+<header>
+  <h1>QualityDesk</h1>
+  <p>Mini quality management system tracker, in the style of ISO 9001. Demo data is stored only in your browser.</p>
+  <button class="btn" data-act="print">Print report</button>
+  <button class="btn" data-act="reset">Reset demo data</button>
+</header>
+<nav id="nav"></nav>
+<main id="view"></main>
+<footer>Demo project. It is a learning tool and not a certified QMS. Carbon factors are example values.</footer>
+<dialog id="dlg"></dialog>
+<div id="toast"></div>
+
+<script>
+const KEY = 'qualitydesk_v1';
+const TABS = [['dash','Dashboard'],['nc','Non-conformances & CAPA'],['audit','Internal audits'],['doc','Document control'],['co2','Carbon footprint']];
+const NC_STATUS = ['Open','In progress','Verification','Closed'];
+const $ = s => document.querySelector(s);
+const esc = v => String(v ?? '').replace(/[&<>"']/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
+const iso = d => d.toISOString().slice(0,10);
+const today = () => iso(new Date());
+const plus = n => { const d = new Date(); d.setDate(d.getDate()+n); return iso(d); };
+const days = d => Math.round((new Date(d) - new Date(today())) / 864e5);
+const nextId = (list, p) => p + '-' + String(list.reduce((m,x) => Math.max(m, +x.id.split('-')[1]), 0) + 1).padStart(3,'0');
+let tab = 'dash', db = load();
+
+function seed(){
+  const d = {log:[]};
+  d.ncs = [
+    {id:'NC-001',title:'Supplier risk assessment missing for a new cloud vendor',source:'Internal audit AUD-001',clause:'8.4',severity:'Major',owner:'Procurement',due:plus(-6),status:'In progress',
+     whys:['The vendor was onboarded without an assessment','The onboarding checklist did not include it','The checklist was written before the supplier procedure changed','Nobody owned updating the checklist','Document review dates were not tracked'],
+     root:'Onboarding checklist was not updated when the supplier procedure changed.',corrective:'Carry out the missing assessment and update the checklist.',preventive:'Link checklist review to procedure changes in document control.',verify:''},
+    {id:'NC-002',title:'Customer complaint: release note did not mention a changed setting',source:'Customer',clause:'8.2',severity:'Minor',owner:'Product',due:plus(9),status:'Open',whys:['','','','',''],root:'',corrective:'',preventive:'',verify:''},
+    {id:'NC-003',title:'Training record missing for two new employees',source:'Internal audit AUD-001',clause:'7.2',severity:'Minor',owner:'HR',due:plus(-20),status:'Closed',
+     whys:['Training was done but not recorded','The record form was not sent to the manager','The onboarding email template had an old link','','',''].slice(0,5),
+     root:'Old link in the onboarding email template.',corrective:'Records completed for both employees.',preventive:'Template link fixed and added to quarterly check.',verify:'Checked 5 new starters on '+plus(-3)+': all records present.'},
+    {id:'NC-004',title:'Backup restore test not done this quarter',source:'Process',clause:'8.1',severity:'Major',owner:'Cloud Operations',due:plus(4),status:'Verification',
+     whys:['The test was skipped','The engineer who ran it changed teams','The task was assigned to a person, not a role','','',''].slice(0,5),
+     root:'Task was assigned to a person, not a role.',corrective:'Restore test done and documented.',preventive:'Recurring task assigned to the on-call role.',verify:''}
+  ];
+  d.audits = [
+    {id:'AUD-001',area:'Supplier management and HR onboarding',clause:'7.2, 8.4',auditor:'A. Mirza',date:plus(-30),status:'Completed',findings:[
+      {type:'Major NC',text:'No risk assessment for one new cloud vendor.',nc:'NC-001'},
+      {type:'Minor NC',text:'Two training records missing.',nc:'NC-003'},
+      {type:'Observation',text:'Supplier list is kept in two places.',nc:''}]},
+    {id:'AUD-002',area:'Software release process',clause:'8.5, 8.6',auditor:'A. Mirza',date:plus(12),status:'Planned',findings:[]},
+    {id:'AUD-003',area:'Document control',clause:'7.5',auditor:'External (surveillance audit)',date:plus(45),status:'Planned',findings:[]},
+    {id:'AUD-004',area:'Customer support and complaints',clause:'8.2, 9.1',auditor:'A. Mirza',date:plus(-75),status:'Completed',findings:[
+      {type:'Conformity',text:'Complaints are logged and answered within the target time.',nc:''}]}
+  ];
+  d.docs = [
+    {id:'DOC-001',title:'Quality Policy',type:'Policy',owner:'Quality Manager',version:3,status:'Approved',approved:plus(-200),review:plus(165),history:[{v:3,date:plus(-200),note:'Yearly review, objectives updated',by:'Quality Manager'}]},
+    {id:'DOC-002',title:'Supplier Evaluation Procedure',type:'Procedure',owner:'Procurement',version:2,status:'Approved',approved:plus(-380),review:plus(-15),history:[{v:2,date:plus(-380),note:'Added cloud vendor criteria',by:'Procurement Lead'}]},
+    {id:'DOC-003',title:'Internal Audit Procedure',type:'Procedure',owner:'Quality Manager',version:4,status:'Approved',approved:plus(-340),review:plus(25),history:[{v:4,date:plus(-340),note:'Aligned with ISO 19011 guidance',by:'Quality Manager'}]},
+    {id:'DOC-004',title:'Onboarding Checklist',type:'Work instruction',owner:'HR',version:2,status:'Draft',approved:'',review:'',history:[{v:2,date:plus(-2),note:'New revision: add supplier and training record steps (from NC-001, NC-003)',by:'HR'}]},
+    {id:'DOC-005',title:'Corrective Action Procedure',type:'Procedure',owner:'Quality Manager',version:1,status:'Approved',approved:plus(-120),review:plus(245),history:[{v:1,date:plus(-120),note:'First release',by:'Quality Manager'}]}
+  ];
+  d.co2 = [
+    {id:'CF-001',activity:'Company cars (diesel)',scope:1,qty:2400,unit:'litres',factor:2.6,owner:'Facilities',status:'Collected'},
+    {id:'CF-002',activity:'Office electricity',scope:2,qty:185000,unit:'kWh',factor:0.05,owner:'Facilities',status:'Collected'},
+    {id:'CF-003',activity:'District heating',scope:2,qty:210,unit:'MWh',factor:100,owner:'Facilities',status:'Collected'},
+    {id:'CF-004',activity:'Business flights',scope:3,qty:310000,unit:'km',factor:0.15,owner:'Finance',status:'Collected'},
+    {id:'CF-005',activity:'Employee commuting',scope:3,qty:0,unit:'km',factor:0.12,owner:'HR',status:'Missing'},
+    {id:'CF-006',activity:'Cloud hosting (supplier report)',scope:3,qty:0,unit:'kg CO2e',factor:1,owner:'Cloud Operations',status:'Missing'}
+  ];
+  return d;
+}
+function load(){ try { const d = JSON.parse(localStorage.getItem(KEY)); if (d && d.ncs) return d; } catch(e){} return seed(); }
+function save(){ try { localStorage.setItem(KEY, JSON.stringify(db)); } catch(e){} }
+function log(text){ db.log.unshift({t:new Date().toISOString(), text}); db.log = db.log.slice(0,200); save(); }
+function toast(m){ const t = $('#toast'); t.textContent = m; t.classList.add('show'); setTimeout(() => t.classList.remove('show'), 1800); }
+
+const tag = (text, cls='') => `<span class="tag ${cls}">${esc(text)}</span>`;
+const ncTag = n => tag(n.status, n.status==='Closed' ? 'ok' : n.status==='Verification' ? 'blue' : n.status==='Open' ? 'warn' : '');
+const overdue = n => n.status !== 'Closed' && days(n.due) < 0;
+const dueTxt = (d, done) => !d ? '<span class="mute">–</span>' : done ? esc(d) : days(d) < 0 ? `${esc(d)} ${tag(-days(d)+' d overdue','bad')}` : days(d) <= 30 ? `${esc(d)} ${tag('in '+days(d)+' d','warn')}` : esc(d);
+const kg = r => r.qty * r.factor;
+const t1 = n => (n/1000).toLocaleString('en', {maximumFractionDigits:1});
+
+function render(){
+  $('#nav').innerHTML = TABS.map(([k,l]) => `<button data-tab="${k}" class="${k===tab?'on':''}">${l}</button>`).join('');
+  $('#view').innerHTML = ({dash:vDash, nc:vNc, audit:vAudit, doc:vDoc, co2:vCo2})[tab]();
+}
+
+function vDash(){
+  const open = db.ncs.filter(n => n.status !== 'Closed'), od = db.ncs.filter(overdue);
+  const yr = new Date().getFullYear(), au = db.audits.filter(a => a.date.slice(0,4) == yr), done = au.filter(a => a.status === 'Completed');
+  const docDue = db.docs.filter(d => d.status === 'Approved' && days(d.review) <= 30), docOver = docDue.filter(d => days(d.review) < 0);
+  const total = db.co2.reduce((s,r) => s + kg(r), 0), miss = db.co2.filter(r => r.status === 'Missing').length;
+  const cal = [
+    ...open.map(n => ({d:n.due, t:`${n.id} corrective action due: ${n.title}`})),
+    ...db.audits.filter(a => a.status === 'Planned').map(a => ({d:a.date, t:`${a.id} internal audit: ${a.area}`})),
+    ...db.docs.filter(d => d.status === 'Approved').map(d => ({d:d.review, t:`${d.id} document review: ${d.title}`}))
+  ].filter(x => days(x.d) <= 60).sort((a,b) => a.d.localeCompare(b.d));
+  return `<h2>Dashboard</h2><p class="sub">Overview for the management review. All numbers come from the registers in the other tabs.</p>
+  <div class="kpis">
+    <div class="kpi ${open.length?'warn':'ok'}"><b>${open.length}</b><span>Open non-conformances</span></div>
+    <div class="kpi ${od.length?'bad':'ok'}"><b>${od.length}</b><span>Overdue corrective actions</span></div>
+    <div class="kpi"><b>${done.length}/${au.length}</b><span>Internal audits completed in ${yr}</span></div>
+    <div class="kpi ${docOver.length?'bad':docDue.length?'warn':'ok'}"><b>${docDue.length}</b><span>Documents due for review (30 days)</span></div>
+    <div class="kpi ${miss?'warn':'ok'}"><b>${t1(total)} t</b><span>CO2e collected so far${miss?`, ${miss} data source(s) missing`:''}</span></div>
+  </div>
+  <div class="card"><h2>Management review summary</h2><p style="margin:6px 0 0">
+    There are <b>${open.length}</b> open non-conformances, <b>${od.length}</b> of them past the due date.
+    <b>${done.length}</b> of <b>${au.length}</b> internal audits planned for ${yr} are completed.
+    <b>${docOver.length}</b> approved document(s) are past their review date and <b>${docDue.length-docOver.length}</b> more are due within 30 days.
+    Carbon footprint data collection is <b>${db.co2.length-miss}</b> of <b>${db.co2.length}</b> sources complete.</p></div>
+  <div class="cols">
+    <div class="card"><h2>Calendar: next 60 days and overdue</h2><ul class="plain">${cal.map(x => `<li>${dueTxt(x.d)}<br>${esc(x.t)}</li>`).join('') || '<li class="mute">Nothing due.</li>'}</ul></div>
+    <div class="card"><h2>Recent activity (audit trail)</h2><ul class="plain">${db.log.slice(0,10).map(l => `<li><small>${esc(new Date(l.t).toLocaleString('sv').slice(0,16))}</small><br>${esc(l.text)}</li>`).join('') || '<li class="mute">No changes yet. Every change you make is logged here with its time.</li>'}</ul></div>
+  </div>`;
+}
+
+function vNc(){
+  return `<h2>Non-conformances and corrective actions (CAPA)</h2><p class="sub">Each non-conformance is followed from root cause analysis (5 Whys) to corrective action and a check that the action worked.</p>
+  <div class="bar"><button class="btn" data-act="nc-new">New non-conformance</button><span class="sp"></span><button class="btn ghost" data-act="csv" data-k="ncs">Export CSV</button></div>
+  <div class="card tw"><table><tr><th>ID</th><th>Title</th><th>Source</th><th>Clause</th><th>Severity</th><th>Owner</th><th>Due</th><th>Status</th></tr>
+  ${db.ncs.map(n => `<tr class="click" data-act="nc-open" data-id="${n.id}"><td>${n.id}</td><td>${esc(n.title)}</td><td>${esc(n.source)}</td><td>${esc(n.clause)}</td><td>${tag(n.severity, n.severity==='Major'?'bad':'')}</td><td>${esc(n.owner)}</td><td>${dueTxt(n.due, n.status==='Closed')}</td><td>${ncTag(n)}</td></tr>`).join('')}</table></div>`;
+}
+function ncForm(n){
+  const isNew = !n; n = n || {id:nextId(db.ncs,'NC'),title:'',source:'Process',clause:'',severity:'Minor',owner:'',due:plus(30),status:'Open',whys:['','','','',''],root:'',corrective:'',preventive:'',verify:''};
+  const opt = (list, v) => list.map(o => `<option${o===v?' selected':''}>${esc(o)}</option>`).join('');
+  dialog(`<h3>${isNew?'New non-conformance':n.id}</h3>
+  <label>Title</label><input name="title" required value="${esc(n.title)}">
+  <div class="grid2"><div><label>Source</label><input name="source" value="${esc(n.source)}"></div><div><label>ISO 9001 clause</label><input name="clause" value="${esc(n.clause)}"></div>
+  <div><label>Severity</label><select name="severity">${opt(['Minor','Major'], n.severity)}</select></div><div><label>Owner</label><input name="owner" value="${esc(n.owner)}"></div>
+  <div><label>Due date</label><input type="date" name="due" required value="${esc(n.due)}"></div><div><label>Status</label><select name="status">${opt(NC_STATUS, n.status)}</select></div></div>
+  <label>Root cause analysis: 5 Whys</label>${n.whys.map((w,i) => `<input name="why${i}" placeholder="Why ${i+1}?" value="${esc(w)}" style="margin-bottom:4px">`).join('')}
+  <label>Root cause</label><textarea name="root">${esc(n.root)}</textarea>
+  <label>Corrective action</label><textarea name="corrective">${esc(n.corrective)}</textarea>
+  <label>Preventive action</label><textarea name="preventive">${esc(n.preventive)}</textarea>
+  <label>Verification of effectiveness (needed before closing)</label><textarea name="verify">${esc(n.verify)}</textarea>`, f => {
+    if (f.status === 'Closed' && !f.verify.trim()) { toast('Add the verification before closing.'); return false; }
+    const old = n.status;
+    Object.assign(n, {title:f.title,source:f.source,clause:f.clause,severity:f.severity,owner:f.owner,due:f.due,status:f.status,whys:[0,1,2,3,4].map(i => f['why'+i]),root:f.root,corrective:f.corrective,preventive:f.preventive,verify:f.verify});
+    if (isNew) { db.ncs.push(n); log(`${n.id} created: ${n.title}`); }
+    else log(old !== n.status ? `${n.id} status changed: ${old} → ${n.status}` : `${n.id} updated`);
+  });
+}
+
+function vAudit(){
+  return `<h2>Internal audits</h2><p class="sub">Audit plan for the year. Findings that are non-conformances can be raised into the CAPA register with one click.</p>
+  <div class="bar"><button class="btn" data-act="au-new">Plan an audit</button><span class="sp"></span><button class="btn ghost" data-act="csv" data-k="audits">Export CSV</button></div>
+  <div class="card tw"><table><tr><th>ID</th><th>Area / process</th><th>Clauses</th><th>Auditor</th><th>Date</th><th>Findings</th><th>Status</th></tr>
+  ${db.audits.map(a => `<tr class="click" data-act="au-open" data-id="${a.id}"><td>${a.id}</td><td>${esc(a.area)}</td><td>${esc(a.clause)}</td><td>${esc(a.auditor)}</td><td>${dueTxt(a.date, a.status==='Completed')}</td><td>${a.findings.length}</td><td>${tag(a.status, a.status==='Completed'?'ok':'blue')}</td></tr>`).join('')}</table></div>`;
+}
+function auNew(){
+  dialog(`<h3>Plan an audit</h3><label>Area / process</label><input name="area" required>
+  <div class="grid2"><div><label>ISO 9001 clauses</label><input name="clause"></div><div><label>Auditor</label><input name="auditor" required></div><div><label>Planned date</label><input type="date" name="date" required value="${plus(30)}"></div></div>`, f => {
+    const a = {id:nextId(db.audits,'AUD'),area:f.area,clause:f.clause,auditor:f.auditor,date:f.date,status:'Planned',findings:[]};
+    db.audits.push(a); log(`${a.id} planned: ${a.area}`);
+  });
+}
+function auOpen(a){
+  const types = ['Conformity','Observation','Minor NC','Major NC'];
+  dialog(`<h3>${a.id}: ${esc(a.area)}</h3><p class="mute" style="margin:0">Clauses ${esc(a.clause)||'–'} · Auditor ${esc(a.auditor)} · ${esc(a.date)} · ${tag(a.status, a.status==='Completed'?'ok':'blue')}</p>
+  <label>Findings</label><ul class="plain">${a.findings.map((x,i) => `<li>${tag(x.type, x.type.includes('Major')?'bad':x.type.includes('Minor')?'warn':x.type==='Conformity'?'ok':'')} ${esc(x.text)} ${x.nc ? tag(x.nc,'blue') : x.type.includes('NC') ? `<button type="button" class="btn sm ghost" data-act="au-raise" data-id="${a.id}" data-i="${i}">Raise NC</button>` : ''}</li>`).join('') || '<li class="mute">No findings recorded yet.</li>'}</ul>
+  <label>Add a finding</label><div class="grid2"><select name="ftype">${types.map(t => `<option>${t}</option>`).join('')}</select><input name="ftext" placeholder="What was found?"></div>
+  <label>Audit status</label><select name="status"><option${a.status==='Planned'?' selected':''}>Planned</option><option${a.status==='Completed'?' selected':''}>Completed</option></select>`, f => {
+    if (f.ftext.trim()) { a.findings.push({type:f.ftype, text:f.ftext.trim(), nc:''}); log(`${a.id} finding added (${f.ftype})`); }
+    if (f.status !== a.status) { a.status = f.status; log(`${a.id} marked ${f.status}`); }
+  });
+}
+function auRaise(a, i){
+  const x = a.findings[i];
+  const n = {id:nextId(db.ncs,'NC'),title:x.text,source:'Internal audit '+a.id,clause:a.clause.split(',')[0].trim(),severity:x.type.includes('Major')?'Major':'Minor',owner:'',due:plus(30),status:'Open',whys:['','','','',''],root:'',corrective:'',preventive:'',verify:''};
+  db.ncs.push(n); x.nc = n.id; log(`${n.id} raised from ${a.id}: ${n.title}`); toast(n.id + ' added to the CAPA register'); $('#dlg').close(); render();
+}
+
+function vDoc(){
+  return `<h2>Document control</h2><p class="sub">Register of policies and procedures with versions, approval and review dates. Only approved documents are in use.</p>
+  <div class="bar"><button class="btn" data-act="doc-new">New document</button><span class="sp"></span><button class="btn ghost" data-act="csv" data-k="docs">Export CSV</button></div>
+  <div class="card tw"><table><tr><th>ID</th><th>Title</th><th>Type</th><th>Owner</th><th>Version</th><th>Status</th><th>Next review</th><th></th></tr>
+  ${db.docs.map(d => `<tr><td>${d.id}</td><td>${esc(d.title)}</td><td>${esc(d.type)}</td><td>${esc(d.owner)}</td><td>v${d.version}</td><td>${tag(d.status, d.status==='Approved'?'ok':d.status==='Draft'?'warn':'')}</td><td>${dueTxt(d.review, d.status!=='Approved')}</td>
+  <td style="white-space:nowrap">${d.status==='Approved' ? `<button class="btn sm ghost" data-act="doc-rev" data-id="${d.id}">New revision</button>` : `<button class="btn sm" data-act="doc-appr" data-id="${d.id}">Approve</button>`} <button class="btn sm ghost" data-act="doc-hist" data-id="${d.id}">History</button></td></tr>`).join('')}</table></div>`;
+}
+function docNew(){
+  dialog(`<h3>New document</h3><label>Title</label><input name="title" required>
+  <div class="grid2"><div><label>Type</label><select name="type"><option>Policy</option><option>Procedure</option><option>Work instruction</option><option>Record</option></select></div><div><label>Owner</label><input name="owner" required></div></div>`, f => {
+    const d = {id:nextId(db.docs,'DOC'),title:f.title,type:f.type,owner:f.owner,version:1,status:'Draft',approved:'',review:'',history:[{v:1,date:today(),note:'Draft created',by:f.owner}]};
+    db.docs.push(d); log(`${d.id} draft created: ${d.title}`);
+  });
+}
+function docRev(d){
+  dialog(`<h3>New revision of ${d.id}</h3><p class="mute" style="margin:0">${esc(d.title)}: v${d.version} → v${d.version+1}. The new version stays a draft until it is approved.</p>
+  <label>What changed and why?</label><textarea name="note" required></textarea><label>Changed by</label><input name="by" required value="${esc(d.owner)}">`, f => {
+    d.version++; d.status = 'Draft'; d.history.unshift({v:d.version,date:today(),note:'New revision: '+f.note,by:f.by}); log(`${d.id} new revision v${d.version}: ${f.note}`);
+  });
+}
+function docAppr(d){
+  dialog(`<h3>Approve ${d.id} v${d.version}</h3><p class="mute" style="margin:0">${esc(d.title)}</p>
+  <label>Approved by</label><input name="by" required><label>Next review date</label><input type="date" name="review" required value="${plus(365)}">`, f => {
+    d.status = 'Approved'; d.approved = today(); d.review = f.review; d.history.unshift({v:d.version,date:today(),note:'Approved',by:f.by}); log(`${d.id} v${d.version} approved by ${f.by}`);
+  });
+}
+function docHist(d){
+  dialog(`<h3>${d.id}: revision history</h3><p class="mute" style="margin:0">${esc(d.title)}</p><ul class="plain">${d.history.map(h => `<li><b>v${h.v}</b> · ${esc(h.date)} · ${esc(h.by)}<br>${esc(h.note)}</li>`).join('')}</ul>`, null);
+}
+
+function vCo2(){
+  const sc = [1,2,3].map(s => db.co2.filter(r => r.scope === s).reduce((a,r) => a + kg(r), 0)), tot = sc[0]+sc[1]+sc[2] || 1;
+  const names = ['Scope 1: direct emissions','Scope 2: purchased energy','Scope 3: other indirect emissions'];
+  return `<h2>Carbon footprint data collection</h2><p class="sub">Yearly activity data collected from the teams that own it, grouped by GHG Protocol scope. Emissions = quantity × emission factor.</p>
+  <div class="note">The emission factors here are example values for the demo. For real reporting, use official factors, for example from your energy supplier or national statistics.</div>
+  <div class="card">${names.map((n,i) => `<div style="margin-bottom:10px"><div style="display:flex;justify-content:space-between"><span>${n}</span><b>${t1(sc[i])} t CO2e</b></div><div class="meter"><i style="width:${(sc[i]/tot*100).toFixed(1)}%"></i></div></div>`).join('')}<b>Total: ${t1(sc[0]+sc[1]+sc[2])} t CO2e</b></div>
+  <div class="bar"><button class="btn" data-act="co-new">Add data source</button><span class="sp"></span><button class="btn ghost" data-act="csv" data-k="co2">Export CSV</button></div>
+  <div class="card tw"><table><tr><th>ID</th><th>Activity</th><th>Scope</th><th>Quantity</th><th>Factor (kg CO2e / unit)</th><th>Emissions</th><th>Data owner</th><th>Status</th></tr>
+  ${db.co2.map(r => `<tr class="click" data-act="co-open" data-id="${r.id}"><td>${r.id}</td><td>${esc(r.activity)}</td><td>${r.scope}</td><td>${(+r.qty).toLocaleString('en')} ${esc(r.unit)}</td><td>${r.factor}</td><td>${t1(kg(r))} t</td><td>${esc(r.owner)}</td><td>${tag(r.status, r.status==='Collected'?'ok':'warn')}</td></tr>`).join('')}</table></div>`;
+}
+function coForm(r){
+  const isNew = !r; r = r || {id:nextId(db.co2,'CF'),activity:'',scope:3,qty:0,unit:'',factor:0,owner:'',status:'Missing'};
+  dialog(`<h3>${isNew?'Add data source':r.id}</h3><label>Activity</label><input name="activity" required value="${esc(r.activity)}">
+  <div class="grid2"><div><label>Scope</label><select name="scope">${[1,2,3].map(s => `<option${s===r.scope?' selected':''}>${s}</option>`).join('')}</select></div><div><label>Data owner</label><input name="owner" value="${esc(r.owner)}"></div>
+  <div><label>Quantity (per year)</label><input type="number" step="any" min="0" name="qty" value="${r.qty}"></div><div><label>Unit</label><input name="unit" value="${esc(r.unit)}"></div>
+  <div><label>Emission factor (kg CO2e per unit)</label><input type="number" step="any" min="0" name="factor" value="${r.factor}"></div><div><label>Status</label><select name="status"><option${r.status==='Missing'?' selected':''}>Missing</option><option${r.status==='Collected'?' selected':''}>Collected</option></select></div></div>`, f => {
+    Object.assign(r, {activity:f.activity,scope:+f.scope,owner:f.owner,qty:+f.qty||0,unit:f.unit,factor:+f.factor||0,status:f.status});
+    if (isNew) db.co2.push(r); log(`${r.id} ${isNew?'added':'updated'}: ${r.activity} (${r.status})`);
+  });
+}
+
+function dialog(html, onSave){
+  const d = $('#dlg');
+  d.innerHTML = `<form method="dialog">${html}<div class="acts"><button type="button" class="btn ghost" data-act="close">${onSave?'Cancel':'Close'}</button>${onSave?'<button class="btn" value="save">Save</button>':''}</div></form>`;
+  d.querySelector('form').onsubmit = e => {
+    e.preventDefault(); if (!onSave) return d.close();
+    const f = Object.fromEntries(new FormData(e.target));
+    if (onSave(f) === false) return;
+    save(); d.close(); render(); toast('Saved');
+  };
+  d.showModal();
+}
+function csv(k){
+  const rows = db[k].map(r => { const o = {...r}; for (const key in o) if (typeof o[key] === 'object') o[key] = Array.isArray(o[key]) ? o[key].map(x => typeof x === 'object' ? Object.values(x).join(' / ') : x).filter(Boolean).join(' | ') : ''; return o; });
+  if (!rows.length) return;
+  const head = Object.keys(rows[0]), q = v => '"' + String(v ?? '').replace(/"/g,'""') + '"';
+  const text = [head.join(','), ...rows.map(r => head.map(h => q(r[h])).join(','))].join('\n');
+  const a = document.createElement('a'); a.href = URL.createObjectURL(new Blob([text], {type:'text/csv'})); a.download = 'qualitydesk-' + k + '.csv'; a.click(); URL.revokeObjectURL(a.href);
+}
+
+document.addEventListener('click', e => {
+  const t = e.target.closest('[data-tab],[data-act]'); if (!t) return;
+  if (t.dataset.tab) { tab = t.dataset.tab; return render(); }
+  const id = t.dataset.id, find = list => list.find(x => x.id === id);
+  ({
+    print: () => { tab = 'dash'; render(); window.print(); },
+    reset: () => { db = seed(); save(); render(); toast('Demo data restored'); },
+    close: () => $('#dlg').close(),
+    csv: () => csv(t.dataset.k),
+    'nc-new': () => ncForm(), 'nc-open': () => ncForm(find(db.ncs)),
+    'au-new': auNew, 'au-open': () => auOpen(find(db.audits)), 'au-raise': () => auRaise(find(db.audits), +t.dataset.i),
+    'doc-new': docNew, 'doc-rev': () => docRev(find(db.docs)), 'doc-appr': () => docAppr(find(db.docs)), 'doc-hist': () => docHist(find(db.docs)),
+    'co-new': () => coForm(), 'co-open': () => coForm(find(db.co2))
+  })[t.dataset.act]?.();
+});
+render();
+</script>
+</body>
+</html>
