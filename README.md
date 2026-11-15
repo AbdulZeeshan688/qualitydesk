@@ -2,7 +2,7 @@
 
 A small quality management system (QMS) tracker in the style of ISO 9001. I built it to learn how the main parts of a QMS fit together: non-conformances, corrective actions, internal audits, document control and the management review.
 
-**Live demo:** ADD-YOUR-NETLIFY-LINK-HERE (opens instantly, no login, nothing to install)
+**Live demo:** https://zippy-zuccutto-74f657.netlify.app/ (opens instantly, no login, nothing to install)
 
 ## What it does
 
